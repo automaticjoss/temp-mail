@@ -13,7 +13,8 @@ import {
   NotificationContainer,
   useNotifications,
 } from "@/components/notification-toast";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, Mail } from "lucide-react";
+import { formatDistanceToNow } from "@/lib/date-utils";
 
 export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,6 +30,25 @@ export default function Dashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [loadingEmails, setLoadingEmails] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  // Load read IDs from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("tmaildash_read");
+      if (saved) setReadIds(new Set(JSON.parse(saved)));
+    } catch {}
+  }, []);
+
+  const markAsRead = useCallback((id: string) => {
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem("tmaildash_read", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   const { notifications, notify, dismiss } = useNotifications();
 
@@ -182,7 +202,10 @@ export default function Dashboard() {
   const handleEmailClick = (email: Email) => {
     setSelectedEmail(email);
     setIsDrawerOpen(true);
+    markAsRead(email.id);
   };
+
+  const unreadCount = emails.filter((e) => !readIds.has(e.id)).length;
 
   // Logout
   const handleLogout = () => {
@@ -231,9 +254,84 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Bell className="h-5 w-5 text-slate-400 hover:text-indigo-600 cursor-pointer" />
-              {emails.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full"></span>
+              <button
+                onClick={() => setBellOpen(!bellOpen)}
+                className="relative p-1"
+              >
+                <Bell className="h-5 w-5 text-slate-400 hover:text-indigo-600 cursor-pointer" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Bell Dropdown */}
+              {bellOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setBellOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-40 overflow-hidden">
+                    <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-slate-800">Recent Emails</h4>
+                      {unreadCount > 0 && (
+                        <span className="text-[11px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                          {unreadCount} unread
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {emails.slice(0, 4).length === 0 ? (
+                        <div className="p-6 text-center text-sm text-slate-400">No emails yet</div>
+                      ) : (
+                        emails.slice(0, 4).map((email) => (
+                          <button
+                            key={email.id}
+                            onClick={() => {
+                              handleEmailClick(email);
+                              setBellOpen(false);
+                              setActivePage("inbox");
+                            }}
+                            className={`w-full text-left p-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 ${
+                              readIds.has(email.id) ? "opacity-60" : ""
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                                readIds.has(email.id) ? "bg-slate-300" : "bg-indigo-500"
+                              }`} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className={`text-sm truncate ${
+                                    readIds.has(email.id) ? "text-slate-500" : "text-slate-800 font-semibold"
+                                  }`}>
+                                    {email.sender}
+                                  </p>
+                                  <span className="text-[11px] text-slate-400 shrink-0">
+                                    {formatDistanceToNow(email.created_at)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 truncate mt-0.5">
+                                  {email.subject || "(No subject)"}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    {emails.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setActivePage("inbox");
+                          setBellOpen(false);
+                        }}
+                        className="w-full p-2.5 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 transition-colors"
+                      >
+                        View All Messages
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
             </div>
             <button
@@ -254,6 +352,7 @@ export default function Dashboard() {
               onEmailClick={handleEmailClick}
               onRefresh={fetchEmails}
               onDeleteEmail={handleDeleteEmail}
+              readIds={readIds}
             />
           )}
 

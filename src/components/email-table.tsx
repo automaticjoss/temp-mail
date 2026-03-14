@@ -11,9 +11,10 @@ interface EmailTableProps {
   onEmailClick: (email: Email) => void;
   onRefresh: () => void;
   onDeleteEmail: (id: string) => void;
+  readIds: Set<string>;
 }
 
-export function EmailTable({ emails, loading, onEmailClick, onRefresh, onDeleteEmail }: EmailTableProps) {
+export function EmailTable({ emails, loading, onEmailClick, onRefresh, onDeleteEmail, readIds }: EmailTableProps) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -102,16 +103,27 @@ export function EmailTable({ emails, loading, onEmailClick, onRefresh, onDeleteE
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
-                {filtered.map((email) => (
+                {filtered.map((email) => {
+                  const isRead = readIds.has(email.id);
+                  return (
                   <tr
                     key={email.id}
                     onClick={() => onEmailClick(email)}
-                    className="hover:bg-slate-50 cursor-pointer transition-colors group"
+                    className={`hover:bg-slate-50 cursor-pointer transition-colors group ${
+                      isRead ? "bg-white" : "bg-indigo-50/40"
+                    }`}
                   >
-                    <td className="p-4 font-medium truncate max-w-[200px]">
-                      {email.sender}
+                    <td className="p-4 truncate max-w-[200px]">
+                      <div className="flex items-center gap-2">
+                        {!isRead && <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />}
+                        <span className={isRead ? "text-slate-500" : "font-semibold text-slate-800"}>
+                          {email.sender}
+                        </span>
+                      </div>
                     </td>
-                    <td className="p-4 text-slate-600 truncate max-w-[300px]">
+                    <td className={`p-4 truncate max-w-[300px] ${
+                      isRead ? "text-slate-400" : "text-slate-700 font-medium"
+                    }`}>
                       {email.subject || (
                         <span className="text-slate-300 italic">No subject</span>
                       )}
@@ -134,22 +146,32 @@ export function EmailTable({ emails, loading, onEmailClick, onRefresh, onDeleteE
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
             {/* Mobile card list */}
             <div className="md:hidden divide-y divide-slate-100">
-              {filtered.map((email) => (
+              {filtered.map((email) => {
+                const isRead = readIds.has(email.id);
+                return (
                 <div
                   key={email.id}
                   onClick={() => onEmailClick(email)}
-                  className="p-4 hover:bg-slate-50 cursor-pointer transition-colors active:bg-slate-100"
+                  className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors active:bg-slate-100 ${
+                    isRead ? "" : "bg-indigo-50/40"
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-slate-800 truncate max-w-[55%]">
-                      {email.sender}
-                    </p>
+                    <div className="flex items-center gap-2 truncate max-w-[55%]">
+                      {!isRead && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
+                      <p className={`text-sm truncate ${
+                        isRead ? "text-slate-500" : "font-semibold text-slate-800"
+                      }`}>
+                        {email.sender}
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-xs text-slate-400">
                         {formatDistanceToNow(email.created_at)}
@@ -162,14 +184,17 @@ export function EmailTable({ emails, loading, onEmailClick, onRefresh, onDeleteE
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 truncate">
+                  <p className={`text-sm truncate ${
+                    isRead ? "text-slate-400" : "text-slate-600 font-medium"
+                  }`}>
                     {email.subject || <span className="text-slate-300 italic">No subject</span>}
                   </p>
                   <span className="inline-block mt-1.5 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[11px]">
                     {email.recipient}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

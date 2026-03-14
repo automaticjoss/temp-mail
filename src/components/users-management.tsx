@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Shuffle, Trash2 } from "lucide-react";
+import { Pencil, Shuffle, Trash2, Copy, Check } from "lucide-react";
 import type { EmailUser } from "@/types/database";
 import { formatDistanceToNow } from "@/lib/date-utils";
 
@@ -29,6 +29,16 @@ export function UsersManagement({
 }: UsersManagementProps) {
   const [manualUsername, setManualUsername] = useState("");
   const [selectedDomain, setSelectedDomain] = useState(domains[0] || "@domain.com");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyEmail = async (e: React.MouseEvent, email: string, id: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {}
+  };
 
   const handleManualCreate = () => {
     const username = manualUsername.trim().replace(/\s+/g, "").toLowerCase();
@@ -146,7 +156,20 @@ export function UsersManagement({
                     className="hover:bg-slate-50 transition-colors"
                   >
                     <td className="p-4 font-medium text-indigo-600">
-                      {user.email}
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{user.email}</span>
+                        <button
+                          onClick={(e) => handleCopyEmail(e, user.email, user.id)}
+                          className="shrink-0 text-slate-400 hover:text-indigo-600 transition-colors p-0.5 rounded hover:bg-indigo-50"
+                          title="Copy email"
+                        >
+                          {copiedId === user.id ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                     <td className="p-4">
                       {user.type === "random" ? (
