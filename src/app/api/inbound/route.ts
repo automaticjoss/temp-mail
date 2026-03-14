@@ -3,32 +3,40 @@ import { createServiceClient } from "@/lib/supabase";
 import { simpleParser } from "mailparser";
 import type { InsertEmail } from "@/types/database";
 
-// Regex patterns for OTP/verification codes
-// Matches: 123456, FB-34935, G-123456, 12345, 1234567, etc.
-const OTP_PATTERNS = [
-  /\b([A-Z]{1,4}[\s-]?\d{4,8})\b/i,  // FB-34935, G-123456
-  /\b(\d{4,8})\b/,                     // 123456, 34935, 1234567
-];
+// Extract OTP/verification code smartly
+// Priority: subject line > near-keyword codes > fallback
+function extractOTP(text: string, subject?: string | null): string | null {
+  // 1. Check subject line first (e.g. "014029 is your verification code", "FB-34935 is your confirmation code")
+  if (subject) {
+    // Known prefix pattern in subject: FB-34935, G-123456
+    const subPrefixed = subject.match(/\b((?:FB|G|IG|WA|TW|OTP)[\s-]?\d{4,8})\b/i);
+    if (subPrefixed) return subPrefixed[1];
+    // Plain digits in subject
+    const subDigit = subject.match(/\b(\d{4,8})\b/);
+    if (subDigit) return subDigit[1];
+  }
 
-// Extract OTP/verification code from email content
-function extractOTP(text: string): string | null {
-  // First try prefixed codes like FB-34935
-  const prefixMatch = text.match(/\b([A-Z]{1,4}[\s-]\d{4,8})\b/i);
-  if (prefixMatch) return prefixMatch[1];
-  // Then try plain digit codes (prefer 5-6 digits)
-  const digitMatch = text.match(/\b(\d{5,6})\b/);
-  if (digitMatch) return digitMatch[1];
-  const anyDigit = text.match(/\b(\d{4,8})\b/);
-  if (anyDigit) return anyDigit[1];
+  // 2. Look for codes near verification keywords
+  const nearKeyword = text.match(/(?:code|kode|otp|verif\w*|confirm\w*|sandi)[^\d]{0,30}(\d{4,8})/i);
+  if (nearKeyword) return nearKeyword[1];
+
+  // 3. Look for known-prefix codes like FB-34935, G-123456
+  const prefixed = text.match(/\b((?:FB|G|IG|WA|TW|OTP)[\s-]\d{4,8})\b/i);
+  if (prefixed) return prefixed[1];
+
+  // 4. Fallback: standalone 5-6 digit code
+  const digit = text.match(/\b(\d{5,6})\b/);
+  if (digit) return digit[1];
+
   return null;
 }
 
 // Check if the body likely contains an OTP/verification code
-function hasOTP(text: string | null): boolean {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  const hasKeyword = /verif|code|otp|confirm|kode|sandi/i.test(lower);
-  const hasCode = OTP_PATTERNS.some(r => r.test(text));
+function hasOTP(text: string | null, subject?: string | null): boolean {
+  if (!text && !subject) return false;
+  const combined = ((subject || '') + ' ' + (text || '')).toLowerCase();
+  const hasKeyword = /verif|code|otp|confirm|kode|sandi/i.test(combined);
+  const hasCode = /\b\d{4,8}\b/.test(combined);
   return hasKeyword && hasCode;
 }
 
@@ -73,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email contains OTP
-    const isOtp = hasOTP(bodyText) || hasOTP(bodyHtml);
+    const isOtp = hasOTP(bodyText, subject) || hasOTP(bodyHtml, subject);
 
     // Store in Supabase using service client
     const supabase = createServiceClient();
@@ -103,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract OTP if present for response
-    const otp = bodyText ? extractOTP(bodyText) : (bodyHtml ? extractOTP(bodyHtml) : null);
+    const otp = extractOTP(bodyText || bodyHtml || '', subject);
 
     return NextResponse.json({
       success: true,

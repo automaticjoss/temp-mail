@@ -19,29 +19,40 @@ interface EmailDrawerProps {
   onClose: () => void;
 }
 
-// Extract OTP/verification code — handles FB-34935, G-123456, plain 5-6 digits
-function extractOTP(text: string | null): string | null {
+// Extract OTP/verification code — smart extraction
+// Priority: subject > near-keyword > known-prefix > fallback digit
+function extractOTP(text: string | null, subject?: string | null): string | null {
+  // 1. Subject line first
+  if (subject) {
+    const subPrefixed = subject.match(/\b((?:FB|G|IG|WA|TW|OTP)[\s-]?\d{4,8})\b/i);
+    if (subPrefixed) return subPrefixed[1];
+    const subDigit = subject.match(/\b(\d{4,8})\b/);
+    if (subDigit) return subDigit[1];
+  }
   if (!text) return null;
-  // Prefixed codes like FB-34935, G-123456
-  const prefixMatch = text.match(/\b([A-Z]{1,4}[\s-]\d{4,8})\b/i);
-  if (prefixMatch) return prefixMatch[1];
-  // Plain 5-6 digit codes
-  const digitMatch = text.match(/\b(\d{5,6})\b/);
-  if (digitMatch) return digitMatch[1];
-  const anyDigit = text.match(/\b(\d{4,8})\b/);
-  if (anyDigit) return anyDigit[1];
+
+  // 2. Near verification keywords
+  const nearKeyword = text.match(/(?:code|kode|otp|verif\w*|confirm\w*|sandi)[^\d]{0,30}(\d{4,8})/i);
+  if (nearKeyword) return nearKeyword[1];
+
+  // 3. Known-prefix codes
+  const prefixed = text.match(/\b((?:FB|G|IG|WA|TW|OTP)[\s-]\d{4,8})\b/i);
+  if (prefixed) return prefixed[1];
+
+  // 4. Standalone 5-6 digit
+  const digit = text.match(/\b(\d{5,6})\b/);
+  if (digit) return digit[1];
+
   return null;
 }
 
-// Highlight OTP codes in text content
-const OTP_HIGHLIGHT_REGEX = /\b([A-Z]{1,4}[\s-]\d{4,8}|\d{4,8})\b/gi;
-
+// Highlight OTP-like codes in text content
 function highlightOTP(text: string | null): React.ReactNode {
   if (!text) return null;
-  const parts = text.split(OTP_HIGHLIGHT_REGEX);
+  const regex = /\b(\d{4,8})\b/g;
+  const parts = text.split(regex);
   return parts.map((part, index) => {
-    if (OTP_HIGHLIGHT_REGEX.test(part)) {
-      OTP_HIGHLIGHT_REGEX.lastIndex = 0;
+    if (/^\d{4,8}$/.test(part)) {
       return (
         <Badge
           key={index}
@@ -60,7 +71,7 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
 
   if (!email) return null;
 
-  const otp = extractOTP(email.body_text) || extractOTP(email.body_html);
+  const otp = extractOTP(email.body_text, email.subject) || extractOTP(email.body_html, email.subject);
 
   const handleCopyOTP = async () => {
     if (!otp) return;
