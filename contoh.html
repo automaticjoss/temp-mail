@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMail Dashboard Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex">
+        <div class="h-16 flex items-center px-6 bg-slate-950 font-bold text-white text-lg tracking-wider border-b border-slate-800">
+            <i class="fa-solid fa-paper-plane text-indigo-500 mr-2"></i> TMailDash.
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <button onclick="switchPage('inbox')" id="nav-inbox" class="w-full flex items-center px-4 py-3 bg-indigo-600 text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-inbox w-5"></i>
+                <span class="ml-3 font-medium">Inbox</span>
+            </button>
+            <button onclick="switchPage('users')" id="nav-users" class="w-full flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-users w-5"></i>
+                <span class="ml-3 font-medium">Users Management</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-slate-800 text-sm text-slate-500 text-center">
+            v1.0.0 Admin
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
+            <div class="flex items-center text-slate-500 md:hidden">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </div>
+            <h2 id="page-title" class="text-xl font-semibold text-slate-800">Inbox Overview</h2>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-slate-400 hover:text-indigo-600 cursor-pointer"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full"></span>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+            
+            <div id="page-inbox" class="block">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-semibold text-slate-800">Recent Messages</h3>
+                        <button class="text-sm text-indigo-600 font-medium hover:text-indigo-800"><i class="fa-solid fa-rotate-right mr-1"></i> Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-medium">From</th>
+                                    <th class="p-4 font-medium">Subject</th>
+                                    <th class="p-4 font-medium">Recipient</th>
+                                    <th class="p-4 font-medium text-right">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 cursor-pointer transition-colors">
+                                    <td class="p-4 font-medium">support@github.com</td>
+                                    <td class="p-4 text-slate-600">Your password has been reset successfully</td>
+                                    <td class="p-4"><span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md text-xs">john.doe@domain.com</span></td>
+                                    <td class="p-4 text-right text-slate-400">10:42 AM</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 cursor-pointer transition-colors">
+                                    <td class="p-4 font-medium">no-reply@aws.amazon.com</td>
+                                    <td class="p-4 text-slate-600">AWS Billing Statement for February</td>
+                                    <td class="p-4"><span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md text-xs">admin@domain.com</span></td>
+                                    <td class="p-4 text-right text-slate-400">Yesterday</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 cursor-pointer transition-colors">
+                                    <td class="p-4 font-medium">newsletter@medium.com</td>
+                                    <td class="p-4 text-slate-600">Top stories for you today</td>
+                                    <td class="p-4"><span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md text-xs">random.x9z@domain.com</span></td>
+                                    <td class="p-4 text-right text-slate-400">Mar 12</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-users" class="hidden space-y-6">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Create New Email User</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <h4 class="text-sm font-bold text-slate-600 mb-3"><i class="fa-solid fa-pen-to-square mr-1"></i> Manual Creation</h4>
+                            <div class="flex space-x-2">
+                                <input type="text" id="manual-username" placeholder="username" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <select id="manual-domain" class="px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white outline-none">
+                                    <option value="@domain.com">@domain.com</option>
+                                    <option value="@mail.test">@mail.test</option>
+                                </select>
+                            </div>
+                            <button onclick="createUser('manual')" class="mt-3 w-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors">
+                                Add Custom User
+                            </button>
+                        </div>
+
+                        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex flex-col justify-center">
+                            <h4 class="text-sm font-bold text-indigo-800 mb-2"><i class="fa-solid fa-shuffle mr-1"></i> Random Generation</h4>
+                            <p class="text-xs text-indigo-600 mb-4">Instantly generate a random alphanumeric email address.</p>
+                            <button onclick="createUser('random')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors shadow-sm">
+                                Generate Random User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-semibold text-slate-800">Active Users List</h3>
+                        <span id="user-count" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">3 Users</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-medium">Email Address</th>
+                                    <th class="p-4 font-medium">Type</th>
+                                    <th class="p-4 font-medium">Created At</th>
+                                    <th class="p-4 font-medium text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="text-sm text-slate-700 divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-4 font-medium">john.doe@domain.com</td>
+                                    <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">Manual</span></td>
+                                    <td class="p-4 text-slate-400">Just now</td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchPage(page) {
+            const pageInbox = document.getElementById('page-inbox');
+            const pageUsers = document.getElementById('page-users');
+            const navInbox = document.getElementById('nav-inbox');
+            const navUsers = document.getElementById('nav-users');
+            const title = document.getElementById('page-title');
+
+            // Reset Nav Styles
+            navInbox.className = "w-full flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-slate-300";
+            navUsers.className = "w-full flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-slate-300";
+
+            if (page === 'inbox') {
+                pageInbox.classList.remove('hidden');
+                pageUsers.classList.add('hidden');
+                navInbox.className = "w-full flex items-center px-4 py-3 bg-indigo-600 text-white rounded-lg transition-colors";
+                title.innerText = "Inbox Overview";
+            } else {
+                pageUsers.classList.remove('hidden');
+                pageInbox.classList.add('hidden');
+                navUsers.className = "w-full flex items-center px-4 py-3 bg-indigo-600 text-white rounded-lg transition-colors";
+                title.innerText = "Users Management";
+            }
+        }
+
+        // --- User Creation Logic ---
+        let userCount = 1;
+
+        function makeid(length) {
+            let result = '';
+            const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        }
+
+        function createUser(type) {
+            let email = '';
+            let labelType = '';
+
+            if (type === 'random') {
+                email = makeid(8) + Math.floor(Math.random() * 100) + '@domain.com';
+                labelType = '<span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs">Random</span>';
+            } else {
+                const username = document.getElementById('manual-username').value.trim().replace(/\s+/g, '').toLowerCase();
+                const domain = document.getElementById('manual-domain').value;
+                if (!username) {
+                    alert("Username nggak boleh kosong bro!");
+                    return;
+                }
+                email = username + domain;
+                labelType = '<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">Manual</span>';
+                document.getElementById('manual-username').value = ''; // Reset
+            }
+
+            addUserToTable(email, labelType);
+        }
+
+        function addUserToTable(email, typeHTML) {
+            const tbody = document.getElementById('user-table-body');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors animation-fade-in";
+            
+            // Get current time
+            const now = new Date();
+            const timeString = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            tr.innerHTML = `
+                <td class="p-4 font-medium text-indigo-600">${email}</td>
+                <td class="p-4">${typeHTML}</td>
+                <td class="p-4 text-slate-400">Today, ${timeString}</td>
+                <td class="p-4 text-right">
+                    <button onclick="this.closest('tr').remove(); updateCount(-1);" class="text-slate-400 hover:text-red-500 transition-colors" title="Delete User">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.insertBefore(tr, tbody.firstChild);
+            updateCount(1);
+        }
+
+        function updateCount(change) {
+            userCount += change;
+            document.getElementById('user-count').innerText = userCount + " Users";
+        }
+    </script>
+</body>
+</html>
