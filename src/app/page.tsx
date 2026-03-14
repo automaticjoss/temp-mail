@@ -164,6 +164,20 @@ export default function Dashboard() {
     }
   };
 
+  // Delete email
+  const handleDeleteEmail = async (id: string) => {
+    try {
+      const res = await fetch(`/api/emails/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setEmails((prev) => prev.filter((e) => e.id !== id));
+      } else {
+        console.error("Failed to delete email");
+      }
+    } catch (err) {
+      console.error("Error deleting email:", err);
+    }
+  };
+
   // Email drawer
   const handleEmailClick = (email: Email) => {
     setSelectedEmail(email);
@@ -196,20 +210,22 @@ export default function Dashboard() {
         activePage={activePage}
         onNavigate={setActivePage}
         onLogout={handleLogout}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col h-screen">
+      <div className="flex-1 flex flex-col h-screen min-w-0">
         {/* Top header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
-          <div className="flex items-center gap-4">
+        <header className="h-14 md:h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm shrink-0">
+          <div className="flex items-center gap-3">
             <button
-              className="text-slate-500 md:hidden"
+              className="text-slate-500 md:hidden p-1"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             </button>
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 className="text-lg md:text-xl font-semibold text-slate-800 truncate">
               {pageTitles[activePage]}
             </h2>
           </div>
@@ -230,13 +246,14 @@ export default function Dashboard() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 md:p-6">
           {activePage === "inbox" && (
             <EmailTable
               emails={emails}
               loading={loadingEmails}
               onEmailClick={handleEmailClick}
               onRefresh={fetchEmails}
+              onDeleteEmail={handleDeleteEmail}
             />
           )}
 

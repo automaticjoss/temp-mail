@@ -3,19 +3,33 @@ import { createServiceClient } from "@/lib/supabase";
 import { simpleParser } from "mailparser";
 import type { InsertEmail } from "@/types/database";
 
-// Regex to find 6-digit OTP codes
-const OTP_REGEX = /\b(\d{6})\b/;
+// Regex patterns for OTP/verification codes
+// Matches: 123456, FB-34935, G-123456, 12345, 1234567, etc.
+const OTP_PATTERNS = [
+  /\b([A-Z]{1,4}[\s-]?\d{4,8})\b/i,  // FB-34935, G-123456
+  /\b(\d{4,8})\b/,                     // 123456, 34935, 1234567
+];
 
-// Extract OTP from email content
+// Extract OTP/verification code from email content
 function extractOTP(text: string): string | null {
-  const match = text.match(OTP_REGEX);
-  return match ? match[1] : null;
+  // First try prefixed codes like FB-34935
+  const prefixMatch = text.match(/\b([A-Z]{1,4}[\s-]\d{4,8})\b/i);
+  if (prefixMatch) return prefixMatch[1];
+  // Then try plain digit codes (prefer 5-6 digits)
+  const digitMatch = text.match(/\b(\d{5,6})\b/);
+  if (digitMatch) return digitMatch[1];
+  const anyDigit = text.match(/\b(\d{4,8})\b/);
+  if (anyDigit) return anyDigit[1];
+  return null;
 }
 
-// Check if the body contains a 6-digit OTP
+// Check if the body likely contains an OTP/verification code
 function hasOTP(text: string | null): boolean {
   if (!text) return false;
-  return OTP_REGEX.test(text);
+  const lower = text.toLowerCase();
+  const hasKeyword = /verif|code|otp|confirm|kode|sandi/i.test(lower);
+  const hasCode = OTP_PATTERNS.some(r => r.test(text));
+  return hasKeyword && hasCode;
 }
 
 export async function POST(request: NextRequest) {

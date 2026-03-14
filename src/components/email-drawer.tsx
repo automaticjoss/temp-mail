@@ -19,19 +19,29 @@ interface EmailDrawerProps {
   onClose: () => void;
 }
 
-const OTP_REGEX = /\b(\d{6})\b/g;
-
+// Extract OTP/verification code — handles FB-34935, G-123456, plain 5-6 digits
 function extractOTP(text: string | null): string | null {
   if (!text) return null;
-  const match = text.match(/\b(\d{6})\b/);
-  return match ? match[1] : null;
+  // Prefixed codes like FB-34935, G-123456
+  const prefixMatch = text.match(/\b([A-Z]{1,4}[\s-]\d{4,8})\b/i);
+  if (prefixMatch) return prefixMatch[1];
+  // Plain 5-6 digit codes
+  const digitMatch = text.match(/\b(\d{5,6})\b/);
+  if (digitMatch) return digitMatch[1];
+  const anyDigit = text.match(/\b(\d{4,8})\b/);
+  if (anyDigit) return anyDigit[1];
+  return null;
 }
+
+// Highlight OTP codes in text content
+const OTP_HIGHLIGHT_REGEX = /\b([A-Z]{1,4}[\s-]\d{4,8}|\d{4,8})\b/gi;
 
 function highlightOTP(text: string | null): React.ReactNode {
   if (!text) return null;
-  const parts = text.split(OTP_REGEX);
+  const parts = text.split(OTP_HIGHLIGHT_REGEX);
   return parts.map((part, index) => {
-    if (/^\d{6}$/.test(part)) {
+    if (OTP_HIGHLIGHT_REGEX.test(part)) {
+      OTP_HIGHLIGHT_REGEX.lastIndex = 0;
       return (
         <Badge
           key={index}
@@ -65,7 +75,7 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[90vw] sm:w-[480px] md:w-[540px] sm:max-w-[540px] bg-white border-slate-200 text-slate-800 overflow-y-auto p-0">
+      <SheetContent className="!w-[92vw] sm:!w-[520px] md:!w-[600px] lg:!w-[640px] !max-w-[640px] bg-white border-slate-200 text-slate-800 overflow-y-auto p-0">
         <SheetHeader className="border-b border-slate-200 p-5">
           <SheetTitle className="text-slate-800 flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5 text-indigo-500" />
