@@ -65,24 +65,24 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[500px] sm:w-[600px] bg-white border-slate-200 text-slate-800 overflow-y-auto">
-        <SheetHeader className="border-b border-slate-200 pb-4">
-          <SheetTitle className="text-slate-800 flex items-center gap-2">
+      <SheetContent className="w-[90vw] sm:w-[480px] md:w-[540px] sm:max-w-[540px] bg-white border-slate-200 text-slate-800 overflow-y-auto p-0">
+        <SheetHeader className="border-b border-slate-200 p-5">
+          <SheetTitle className="text-slate-800 flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5 text-indigo-500" />
             Message Details
           </SheetTitle>
         </SheetHeader>
 
-        <div className="py-6 space-y-6">
+        <div className="p-5 space-y-5 overflow-y-auto">
           {/* OTP Badge & Copy */}
           {email.is_otp && otp && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-emerald-600 uppercase tracking-wider font-medium mb-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-emerald-600 uppercase tracking-wider font-semibold mb-1">
                     Detected OTP Code
                   </p>
-                  <p className="text-3xl font-mono font-bold text-emerald-700">
+                  <p className="text-2xl sm:text-3xl font-mono font-bold text-emerald-700 tracking-widest">
                     {otp}
                   </p>
                 </div>
@@ -109,30 +109,30 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
           )}
 
           {/* Email Metadata */}
-          <div className="space-y-4">
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-100">
             <div className="flex items-start gap-3">
-              <User className="h-4 w-4 text-slate-400 mt-1" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">From</p>
-                <p className="text-sm text-slate-700 truncate">{email.sender}</p>
+              <User className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">From</p>
+                <p className="text-sm text-slate-700 break-all">{email.sender}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Mail className="h-4 w-4 text-slate-400 mt-1" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">To</p>
-                <p className="text-sm text-slate-700 truncate">{email.recipient}</p>
+              <Mail className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">To</p>
+                <p className="text-sm text-slate-700 break-all">{email.recipient}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Clock className="h-4 w-4 text-slate-400 mt-1" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">Received</p>
+              <Clock className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Received</p>
                 <p className="text-sm text-slate-700">
                   {formatDateTime(email.created_at)}
-                  <span className="text-slate-400 ml-2">
+                  <span className="text-slate-400 ml-1 text-xs">
                     ({formatDistanceToNow(email.created_at)})
                   </span>
                 </p>
@@ -141,30 +141,31 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
           </div>
 
           {/* Subject */}
-          <div className="border-t border-slate-200 pt-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Subject</p>
-            <p className="text-slate-800 font-medium">
-              {email.subject || <span className="text-slate-400 italic">No subject</span>}
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-1.5">Subject</p>
+            <p className="text-slate-800 font-semibold text-[15px] break-words">
+              {email.subject || <span className="text-slate-400 italic font-normal">No subject</span>}
             </p>
           </div>
 
           {/* Body */}
-          <div className="border-t border-slate-200 pt-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Content</p>
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-2">Content</p>
 
             {email.body_html ? (
-              <div className="bg-slate-50 rounded-lg p-4 max-h-[400px] overflow-auto border border-slate-200">
+              <div className="bg-slate-50 rounded-xl p-4 overflow-auto border border-slate-100" style={{ maxHeight: 'calc(100vh - 500px)', minHeight: '120px' }}>
                 <div
-                  className="prose prose-sm max-w-none
+                  className="prose prose-sm max-w-none break-words
                     prose-p:text-slate-600 prose-p:leading-relaxed
                     prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline
-                    prose-strong:text-slate-800"
+                    prose-strong:text-slate-800
+                    prose-img:max-w-full prose-img:h-auto"
                   dangerouslySetInnerHTML={{ __html: email.body_html }}
                 />
               </div>
             ) : email.body_text ? (
-              <div className="bg-slate-50 rounded-lg p-4 max-h-[400px] overflow-auto border border-slate-200">
-                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+              <div className="bg-slate-50 rounded-xl p-4 overflow-auto border border-slate-100" style={{ maxHeight: 'calc(100vh - 500px)', minHeight: '120px' }}>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words">
                   {highlightOTP(email.body_text)}
                 </p>
               </div>
@@ -174,8 +175,8 @@ export function EmailDrawer({ email, isOpen, onClose }: EmailDrawerProps) {
           </div>
 
           {/* Status */}
-          <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
-            <p className="text-xs text-slate-400">Status</p>
+          <div className="border-t border-slate-100 pt-4 flex items-center justify-between">
+            <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Status</p>
             {email.is_otp ? (
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
                 OTP Detected
