@@ -1,15 +1,17 @@
 /**
- * Cloudflare Worker - Email Bridge
- * 
- * This worker handles incoming emails via Cloudflare Email Routing
- * and forwards them to the Vercel API webhook.
- * 
+ * Cloudflare Worker - Email Bridge (2-Way)
+ *
+ * Handles:
+ * 1. EMAIL → Receives inbound emails via CF Email Routing → forwards to TMailDash webhook
+ * 2. GET /  → Health check / status
+ * 3. POST /send → (Future) Send email via MailChannels (free on CF Workers)
+ *
  * Setup:
- * 1. Deploy this script to Cloudflare Workers
- * 2. Set environment variables:
- *    - WEBHOOK_URL: Your Vercel deployment URL + /api/inbound
+ * 1. `cd cloudflare && npx wrangler deploy`
+ * 2. Set environment variables in CF Dashboard:
+ *    - WEBHOOK_URL: https://your-tmaildash.vercel.app/api/inbound
  *    - API_KEY: Same value as INBOUND_SECRET in your Vercel env
- * 3. Configure Email Routing to forward emails to this worker
+ * 3. Email Routing: CF Dashboard → Email → Email Routing → Catch-all → Send to Worker
  */
 
 export interface Env {
@@ -17,59 +19,154 @@ export interface Env {
   API_KEY: string;
 }
 
-// Allowed sender domains (add more as needed)
-const ALLOWED_DOMAINS = [
-  "facebookmail.com",
-  "instagram.com",
-  // Add more allowed domains here
-];
-
-function isAllowedSender(from: string): boolean {
-  // If ALLOWED_DOMAINS is empty, allow all
-  if (ALLOWED_DOMAINS.length === 0) return true;
-  
-  return ALLOWED_DOMAINS.some((domain) =>
-    from.toLowerCase().includes(`@${domain}`)
-  );
-}
-
 export default {
-  async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
+  // ─── HTTP Handler (GET/POST) ───────────────────────────────
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+
+    // CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // GET / → Health check & status
+    if (request.method === "GET" && url.pathname === "/") {
+      return new Response(
+        JSON.stringify({
+          status: "online",
+          service: "TMailDash Email Bridge",
+          webhook: env.WEBHOOK_URL ? "configured" : "not configured",
+          endpoints: {
+            "GET /": "Health check (this)",
+            "POST /send": "Send email via MailChannels",
+            "EMAIL": "Auto-forward inbound emails to webhook",
+          },
+        }),
+        {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // POST /send → Send email via MailChannels (free on CF Workers)
+    if (request.method === "POST" && url.pathname === "/send") {
+      // Verify API key
+      const authKey =
+        request.headers.get("x-api-key") ||
+        request.headers.get("Authorization")?.replace("Bearer ", "");
+
+      if (!authKey || authKey !== env.API_KEY) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      try {
+        const body = await request.json() as {
+          from: { email: string; name?: string };
+          to: string;
+          subject: string;
+          text?: string;
+          html?: string;
+        };
+
+        const { from, to, subject, text, html } = body;
+
+        if (!from?.email || !to || !subject) {
+          return new Response(
+            JSON.stringify({ error: "Missing required fields: from.email, to, subject" }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        // Send via MailChannels (free for CF Workers)
+        const mailRes = await fetch("https://api.mailchannels.net/tx/v1/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            personalizations: [{ to: [{ email: to }] }],
+            from: { email: from.email, name: from.name || "TMailDash" },
+            subject,
+            content: [
+              {
+                type: html ? "text/html" : "text/plain",
+                value: html || text || "",
+              },
+            ],
+          }),
+        });
+
+        if (mailRes.status === 202 || mailRes.ok) {
+          return new Response(
+            JSON.stringify({ success: true, message: "Email sent" }),
+            {
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        const errText = await mailRes.text();
+        return new Response(
+          JSON.stringify({ error: "MailChannels error", details: errText }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request body" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    }
+
+    return new Response(JSON.stringify({ error: "Not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  },
+
+  // ─── Email Handler (Inbound) ──────────────────────────────
+  async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     const from = message.from;
     const to = message.to;
 
-    // Filter: Only process emails from allowed domains
-    if (!isAllowedSender(from)) {
-      console.log(`Rejected email from: ${from} (not in allowed domains)`);
-      // Silently reject by not forwarding
-      message.setReject("Sender not allowed");
-      return;
-    }
+    console.log(`📨 Inbound email: ${from} → ${to}`);
 
     try {
-      // Read the raw email content
+      // Read the raw email
       const rawEmail = await new Response(message.raw).text();
 
-      // Extract subject from raw email headers
+      // Extract subject from raw headers
       const subjectMatch = rawEmail.match(/^Subject:\s*(.+)$/im);
       const subject = subjectMatch ? subjectMatch[1].trim() : "";
 
-      // Prepare payload for webhook
-      const payload = {
-        to: to,
-        from: from,
-        subject: subject,
-        raw: rawEmail,
-      };
-
-      // Send to Vercel API
+      // Forward to TMailDash webhook
       const response = await fetch(env.WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": env.API_KEY,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          to,
+          from,
+          subject,
+          raw: rawEmail,
+        }),
       });
 
       if (!response.ok) {
@@ -78,13 +175,9 @@ export default {
         throw new Error(`Webhook returned ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log(`Email processed successfully:`, result);
-
+      console.log(`✅ Email forwarded: ${from} → ${to}`);
     } catch (error) {
       console.error("Failed to process email:", error);
-      // Don't reject the email on our side - it was received
-      // Just log the error for debugging
     }
   },
 };

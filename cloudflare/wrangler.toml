@@ -2,11 +2,23 @@ name = "email-bridge"
 main = "worker.ts"
 compatibility_date = "2024-01-01"
 
-# Environment variables (set these in Cloudflare Dashboard)
+# Environment variables (set in Cloudflare Dashboard or here)
 # [vars]
-# WEBHOOK_URL = "https://your-vercel-app.vercel.app/api/inbound"
+# WEBHOOK_URL = "https://your-tmaildash.vercel.app/api/inbound"
 # API_KEY = "your-secret-key"
 
-# Email routing configuration
-# Configure this in Cloudflare Dashboard under Email > Email Routing
-# Add a custom address rule to route emails to this worker
+# ── IMPORTANT: Email Routing Setup ──
+# 1. Go to Cloudflare Dashboard → your domain → Email → Email Routing
+# 2. Enable Email Routing for your domain
+# 3. Go to "Routing rules" → Catch-all address → Edit
+# 4. Action: "Send to a Worker" → select "email-bridge"
+# 5. This catches ALL emails to *@yourdomain.com
+#
+# ── Deploy ──
+# cd cloudflare
+# npx wrangler login        (one-time auth)
+# npx wrangler deploy       (deploy worker)
+#
+# ── After Deploy ──
+# Your worker URL will be: https://email-bridge.<your-account>.workers.dev
+# Add this URL as CLOUDFLARE_WORKER_URL in your TMailDash .env
